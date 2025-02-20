@@ -1,27 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <%- include("../partials/header") %>
-</head>
-<body class="bg-gray-100 text-gray-800">
-  <div class="container mx-auto p-5">
-    <h1 class="text-3xl font-bold text-center mb-5">Pokédex</h1>
+  <head>
+    <%- include("../partials/header") %>
+    <script src="https://cdn.jsdelivr.net/npm/preline@latest/dist/preline.js"></script>
+  </head>
+  <body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-5">
+      <h1 class="text-3xl font-bold text-center mb-5">Pokédex</h1>
 
-    <!-- 🔍 Search Form -->
-    <form action="/search" method="GET" class="flex justify-center mb-5">
-      <input type="text" name="name" placeholder="Search Pokémon..." class="px-4 py-2 border rounded-l-lg focus:outline-none">
-      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-lg">Search</button>
-    </form>
+      <!-- Search Form -->
+      <form action="/search" method="GET" class="flex justify-center mb-5">
+        <input
+          type="text"
+          name="name"
+          id="searchInput"
+          placeholder="Search Pokémon..."
+          class="px-4 py-2 border rounded-l-lg focus:outline-none"
+        />
+        <button
+          type="button"
+          id="searchButton"
+          class="bg-blue-500 text-white px-4 py-2 rounded-r-lg"
+        >
+          Search
+        </button>
+      </form>
 
-    <!-- Pokémon List -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <% pokemonList.forEach(pokemon => { %>
-        <a href="/pokemon/<%= pokemon.name %>" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-xl">
-          <p class="text-xl capitalize font-semibold"><%= pokemon.name %></p>
-        </a>
-      <% }); %>
+      <!-- Pokémon Carousel -->
+      <div
+        data-hs-carousel='{
+          "loadingClasses": "opacity-0",
+          "dotsItemClasses": "hs-carousel-active:bg-blue-700 hs-carousel-active:border-blue-700 size-3 border border-gray-400 rounded-full cursor-pointer dark:border-neutral-600 dark:hs-carousel-active:bg-blue-500 dark:hs-carousel-active:border-blue-500",
+          "slidesQty": { "xs": 1, "lg": 3 },
+          "isDraggable": true
+        }'
+        class="relative w-full max-w-4xl mx-auto"
+      >
+        <div class="hs-carousel w-full overflow-hidden bg-white rounded-lg">
+          <div class="relative min-h-72 -mx-1">
+            <div
+              class="hs-carousel-body absolute top-0 bottom-0 start-0 flex flex-nowrap opacity-0 cursor-grab transition-transform duration-700 hs-carousel-dragging:transition-none hs-carousel-dragging:cursor-grabbing"
+            >
+              <% pokemonList.forEach(pokemon => { %>
+              <div class="hs-carousel-slide px-3">
+                <div class="bg-gray-100 p-6 rounded-lg shadow-lg text-center">
+                  <img
+                    src="<%= pokemon.image %>"
+                    alt="<%= pokemon.name %>"
+                    class="w-32 h-32 mx-auto"
+                  />
+                  <p class="text-xl capitalize font-semibold mt-2">
+                    <%= pokemon.name %>
+                  </p>
+                  <button
+                    type="button"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2"
+                    onclick="openModal('<%= pokemon.name %>')"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL STRUCTURE -->
+      <div
+        id="pokemonModal"
+        class="hs-overlay hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      >
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div class="flex justify-between">
+            <h3 id="modalTitle" class="text-xl font-bold capitalize"></h3>
+            <button onclick="closeModal()" class="text-gray-600">
+              &times;
+            </button>
+          </div>
+          <img id="modalImage" class="w-40 h-40 mx-auto my-4" />
+          <p id="modalHeight" class="text-lg font-semibold"></p>
+          <p id="modalWeight" class="text-lg font-semibold"></p>
+          <p id="modalTypes" class="text-lg font-semibold"></p>
+          <button
+            onclick="closeModal()"
+            class="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg w-full"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-  <%- include("../partials/footer") %>
-</body>
+    <%- include("../partials/footer") %>
+
+    <script>
+      async function openModal(pokemonName) {
+        try {
+          const response = await fetch(`/pokemon/${pokemonName}`);
+          if (!response.ok) throw new Error("Pokémon not found!");
+          const pokemon = await response.json();
+
+          document.getElementById("modalTitle").innerText = pokemon.name;
+          document.getElementById("modalImage").src =
+            pokemon.sprites.front_default;
+          document.getElementById("modalHeight").innerText =
+            "Height: " + pokemon.height;
+          document.getElementById("modalWeight").innerText =
+            "Weight: " + pokemon.weight;
+          document.getElementById("modalTypes").innerText =
+            "Type: " + pokemon.types.map((t) => t.type.name).join(", ");
+
+          document.getElementById("pokemonModal").classList.remove("hidden");
+        } catch (error) {
+          alert("Error fetching Pokémon data.");
+        }
+      }
+
+      function closeModal() {
+        document.getElementById("pokemonModal").classList.add("hidden");
+      }
+
+      document
+        .getElementById("searchButton")
+        .addEventListener("click", async () => {
+          const name = document.getElementById("searchInput").value.trim();
+          if (name) openModal(name);
+        });
+    </script>
+  </body>
 </html>
